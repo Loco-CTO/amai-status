@@ -1,0 +1,54 @@
+# 甘いStatus Configuration - Example
+# Copy this file to config.yaml and customize for your environment
+
+server:
+  # Binding address
+  # Use "0.0.0.0" to listen on all network interfaces
+  # Use "127.0.0.1" to listen only on localhost
+  host: "0.0.0.0"
+  # Server port
+  port: 8182
+
+configuration:
+  # Site title - used in page titles and branding
+  site_title: "Project 甘い"
+
+  # Degraded threshold in milliseconds
+  # If a monitor's response time exceeds this value, it's marked as degraded
+  degraded_threshold: 200
+
+  # Degraded percentage threshold
+  # If the percentage of degraded/down checks exceeds this value, the monitor is marked as degraded
+  # Only applies to aggregated intervals (hour, day, week)
+  degraded_percentage_threshold: 10
+
+  # Footer text displayed at the bottom of the status page
+  footer_text: "Copyright 2019-2025 © Rystal. All Rights Reserved."
+
+# Monitors configuration
+# Add as many monitors as needed
+monitors:
+  - name: "Google Search"
+    url: "https://www.google.com"
+    # Check interval in milliseconds (e.g., 30000 = 30 seconds)
+    interval: 30000
+    # Verify SSL certificates (set to false to ignore SSL errors)
+    verify: true
+    # HTTP status codes to consider as successful
+    accepted_status_codes:
+      - 200
+      - 301
+      - 302
+    # Discord webhook integration (optional)
+    discord_integration:
+      # Get webhook URL from Discord server settings
+      webhook_url: ""
+
+  - name: "Your API"
+    url: "https://api.example.com/health"
+    interval: 30000
+    verify: true
+    accepted_status_codes:
+      - 200
+    discord_integration:
+      webhook_url: ""
