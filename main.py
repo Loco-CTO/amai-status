@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
     Yields:
         None
     """
-    monitors_config, app_config, server_config = config.load_config()
+    monitors_config, _, _ = config.load_config()
     database.init_db()
     task = asyncio.create_task(monitor.monitor_service(monitors_config))
     yield
@@ -73,7 +73,7 @@ def create_app():
     )
 
     try:
-        monitors_config, app_config, server_config = config.load_config()
+        monitors_config, app_config, _ = config.load_config()
 
         routers = init_routers(monitors_config, app_config)
         for router in routers:

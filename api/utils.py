@@ -44,14 +44,6 @@ def aggregate_heartbeat_data(
             )
         return aggregated
 
-    interval_mapping = {
-        "hour": timedelta(hours=1),
-        "day": timedelta(days=1),
-        "week": timedelta(weeks=1),
-    }
-
-    delta = interval_mapping.get(interval, timedelta(hours=1))
-
     grouped: dict = {}
     for r in records:
         if interval == "hour":
