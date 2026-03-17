@@ -6,11 +6,23 @@ from typing import Optional
 import aiohttp
 
 import database
+from aggregation import upsert_aggregates_for_record
 from api.models import MonitorRecord
 
 logger = logging.getLogger(__name__)
 
 monitor_last_status = {}
+
+
+def _save_record(db, record: MonitorRecord, app_config: dict, monitor_name: str):
+    """Persist a monitor record and keep session state clean on DB failures."""
+    try:
+        db.add(record)
+        upsert_aggregates_for_record(db, record, app_config)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logger.exception(f"{monitor_name}: Failed to persist monitor record: {e}")
 
 
 async def send_discord_notification(
@@ -59,16 +71,19 @@ async def send_discord_notification(
     }
 
     try:
-        async with aiohttp.ClientSession() as session, session.post(
-            webhook_url, json={"embeds": [embed]}
-        ) as response:
+        async with (
+            aiohttp.ClientSession() as session,
+            session.post(webhook_url, json={"embeds": [embed]}) as response,
+        ):
             if response.status not in [200, 204]:
                 logger.warning(f"Discord webhook failed for {name}: {response.status}")
     except Exception as e:
         logger.error(f"Failed to send Discord notification: {str(e)}")
 
 
-async def check_monitor(monitor: dict, session: aiohttp.ClientSession, db):
+async def check_monitor(
+    monitor: dict, session: aiohttp.ClientSession, app_config: dict
+):
     """Check a single monitor's status and record results.
 
     Makes an HTTP request to the monitor URL, records the result to the database,
@@ -77,12 +92,13 @@ async def check_monitor(monitor: dict, session: aiohttp.ClientSession, db):
     Args:
         monitor (dict): Monitor configuration with URL and settings.
         session (aiohttp.ClientSession): HTTP session for making requests.
-        db: Database session for storing records.
+        app_config (dict): Application configuration.
     """
     name = monitor["name"]
     url = monitor["url"]
     accepted_codes = set(monitor.get("accepted_status_codes", [200]))
     verify_ssl = monitor.get("verify", True)
+    db = database.SessionLocal()
 
     try:
         start_time = datetime.now()
@@ -101,8 +117,7 @@ async def check_monitor(monitor: dict, session: aiohttp.ClientSession, db):
                 is_up=is_up,
                 response_time=response_time,
             )
-            db.add(record)
-            db.commit()
+            _save_record(db, record, app_config, name)
             logger.info(
                 f"{name}: {status_code} ({response_time:.2f}s) - {'UP' if is_up else 'DOWN'}"
             )
@@ -125,8 +140,7 @@ async def check_monitor(monitor: dict, session: aiohttp.ClientSession, db):
             is_up=False,
             response_time=None,
         )
-        db.add(record)
-        db.commit()
+        _save_record(db, record, app_config, name)
         logger.warning(f"{name}: TIMEOUT - DOWN")
 
         last_status = monitor_last_status.get(name)
@@ -144,8 +158,7 @@ async def check_monitor(monitor: dict, session: aiohttp.ClientSession, db):
             is_up=False,
             response_time=None,
         )
-        db.add(record)
-        db.commit()
+        _save_record(db, record, app_config, name)
 
         logger.error(f"{name}: ERROR - {str(e)}")
 
@@ -156,9 +169,11 @@ async def check_monitor(monitor: dict, session: aiohttp.ClientSession, db):
             last_status is None or last_status is not False
         ):
             await send_discord_notification(name, False, None, None, monitor)
+    finally:
+        db.close()
 
 
-async def monitor_service(monitors_config: list):
+async def monitor_service(monitors_config: list, app_config: dict):
     """Main monitoring service loop.
 
     Continuously checks all configured monitors at their configured intervals
@@ -172,20 +187,36 @@ async def monitor_service(monitors_config: list):
 
     async with aiohttp.ClientSession() as session:
         while True:
-            db = database.SessionLocal()
             try:
                 tasks = []
                 for monitor in monitors_config:
-                    tasks.append(check_monitor(monitor, session, db))
+                    tasks.append(check_monitor(monitor, session, app_config))
 
                 if tasks:
-                    await asyncio.gather(*tasks)
+                    results = await asyncio.gather(*tasks, return_exceptions=True)
+                    for result in results:
+                        if isinstance(result, Exception):
+                            logger.error(
+                                "Unexpected monitor task exception that was recovered: %s",
+                                result,
+                                exc_info=(
+                                    type(result),
+                                    result,
+                                    result.__traceback__,
+                                ),
+                            )
 
                 interval_ms = (
                     monitors_config[0].get("interval", 30000)
                     if monitors_config
                     else 30000
                 )
+                if not isinstance(interval_ms, (int, float)) or interval_ms <= 0:
+                    logger.warning(
+                        f"Invalid monitor interval '{interval_ms}', using default 30000ms"
+                    )
+                    interval_ms = 30000
                 await asyncio.sleep(interval_ms / 1000)
-            finally:
-                db.close()
+            except Exception as e:
+                logger.exception(f"Monitor service loop recovered from error: {e}")
+                await asyncio.sleep(1)

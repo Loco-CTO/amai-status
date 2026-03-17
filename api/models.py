@@ -1,4 +1,12 @@
-from sqlalchemy import Column, String, Integer, DateTime, Float, Boolean
+from sqlalchemy import (
+    Column,
+    String,
+    Integer,
+    DateTime,
+    Float,
+    Boolean,
+    UniqueConstraint,
+)
 from sqlalchemy.ext.declarative import declarative_base
 from pydantic import BaseModel, Field
 from typing import Optional, List
@@ -20,6 +28,31 @@ class MonitorRecord(Base):
     status_code = Column(Integer, nullable=True)
     is_up = Column(Boolean)
     response_time = Column(Float, nullable=True)
+
+
+class HeartbeatAggregate(Base):
+    """Precomputed aggregate heartbeat bucket for fast interval queries."""
+
+    __tablename__ = "heartbeat_aggregates"
+    __table_args__ = (
+        UniqueConstraint(
+            "monitor_name", "interval", "bucket_start", name="uq_heartbeat_aggregate"
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    monitor_name = Column(String, index=True, nullable=False)
+    interval = Column(String, index=True, nullable=False)
+    bucket_start = Column(DateTime, index=True, nullable=False)
+    count = Column(Integer, nullable=False, default=0)
+    down_count = Column(Integer, nullable=False, default=0)
+    degraded_count = Column(Integer, nullable=False, default=0)
+    response_sample_count = Column(Integer, nullable=False, default=0)
+    avg_response_time = Column(Float, nullable=True)
+    issue_percentage = Column(Float, nullable=False, default=0.0)
+    status = Column(String, nullable=False, default="up")
+    is_up = Column(Boolean, nullable=False, default=True)
+    updated_at = Column(DateTime, nullable=False)
 
 
 class MonitorInfo(BaseModel):
