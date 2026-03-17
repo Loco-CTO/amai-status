@@ -149,23 +149,25 @@ def create_heartbeat_router(app_config: dict):
 
         db = database.SessionLocal()
         try:
-            query = db.query(MonitorRecord).filter(MonitorRecord.timestamp >= max_cutoff)
+            query = db.query(MonitorRecord).filter(
+                MonitorRecord.timestamp >= max_cutoff
+            )
             if requested_monitor_names:
                 query = query.filter(
                     MonitorRecord.monitor_name.in_(requested_monitor_names)
                 )
 
-            all_records = (
-                query.order_by(
-                    MonitorRecord.monitor_name.asc(), MonitorRecord.timestamp.asc()
-                ).all()
-            )
+            all_records = query.order_by(
+                MonitorRecord.monitor_name.asc(), MonitorRecord.timestamp.asc()
+            ).all()
 
             records_by_monitor = {}
             for record in all_records:
                 records_by_monitor.setdefault(record.monitor_name, []).append(record)
 
-            target_monitors = requested_monitor_names or sorted(records_by_monitor.keys())
+            target_monitors = requested_monitor_names or sorted(
+                records_by_monitor.keys()
+            )
             precomputed = {}
 
             for monitor_name in target_monitors:
