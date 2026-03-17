@@ -6,6 +6,7 @@ from typing import Optional
 import aiohttp
 
 import database
+from aggregation import upsert_aggregates_for_record
 from api.models import MonitorRecord
 
 logger = logging.getLogger(__name__)
@@ -68,7 +69,7 @@ async def send_discord_notification(
         logger.error(f"Failed to send Discord notification: {str(e)}")
 
 
-async def check_monitor(monitor: dict, session: aiohttp.ClientSession, db):
+async def check_monitor(monitor: dict, session: aiohttp.ClientSession, db, app_config: dict):
     """Check a single monitor's status and record results.
 
     Makes an HTTP request to the monitor URL, records the result to the database,
@@ -102,6 +103,7 @@ async def check_monitor(monitor: dict, session: aiohttp.ClientSession, db):
                 response_time=response_time,
             )
             db.add(record)
+            upsert_aggregates_for_record(db, record, app_config)
             db.commit()
             logger.info(
                 f"{name}: {status_code} ({response_time:.2f}s) - {'UP' if is_up else 'DOWN'}"
@@ -126,6 +128,7 @@ async def check_monitor(monitor: dict, session: aiohttp.ClientSession, db):
             response_time=None,
         )
         db.add(record)
+        upsert_aggregates_for_record(db, record, app_config)
         db.commit()
         logger.warning(f"{name}: TIMEOUT - DOWN")
 
@@ -145,6 +148,7 @@ async def check_monitor(monitor: dict, session: aiohttp.ClientSession, db):
             response_time=None,
         )
         db.add(record)
+        upsert_aggregates_for_record(db, record, app_config)
         db.commit()
 
         logger.error(f"{name}: ERROR - {str(e)}")
@@ -158,7 +162,7 @@ async def check_monitor(monitor: dict, session: aiohttp.ClientSession, db):
             await send_discord_notification(name, False, None, None, monitor)
 
 
-async def monitor_service(monitors_config: list):
+async def monitor_service(monitors_config: list, app_config: dict):
     """Main monitoring service loop.
 
     Continuously checks all configured monitors at their configured intervals
@@ -176,7 +180,7 @@ async def monitor_service(monitors_config: list):
             try:
                 tasks = []
                 for monitor in monitors_config:
-                    tasks.append(check_monitor(monitor, session, db))
+                    tasks.append(check_monitor(monitor, session, db, app_config))
 
                 if tasks:
                     await asyncio.gather(*tasks)

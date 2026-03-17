@@ -58,7 +58,9 @@ def upsert_aggregates_for_record(db, record: MonitorRecord, app_config: dict):
 
         if aggregate is None:
             response_sample_count = 1 if record.response_time is not None else 0
-            avg_response_time = record.response_time if record.response_time is not None else None
+            avg_response_time = (
+                record.response_time if record.response_time is not None else None
+            )
             count = 1
             down_count = 0 if record.is_up else 1
             degraded_count = 1 if is_degraded else 0

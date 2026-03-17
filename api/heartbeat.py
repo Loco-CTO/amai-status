@@ -96,7 +96,9 @@ def create_heartbeat_router(app_config: dict):
                         detail=f"Monitor '{monitor_name}' not found or no data available",
                     )
 
-                aggregated_data = aggregate_heartbeat_data(records, interval, app_config)
+                aggregated_data = aggregate_heartbeat_data(
+                    records, interval, app_config
+                )
             else:
                 aggregate_rows = (
                     db.query(HeartbeatAggregate)
@@ -129,7 +131,9 @@ def create_heartbeat_router(app_config: dict):
                         raw_records, interval, app_config
                     )
                 else:
-                    aggregated_data = [aggregate_row_to_node(row) for row in aggregate_rows]
+                    aggregated_data = [
+                        aggregate_row_to_node(row) for row in aggregate_rows
+                    ]
 
             return {
                 "monitor_name": monitor_name,
@@ -250,7 +254,9 @@ def create_heartbeat_router(app_config: dict):
 
                 records_by_monitor = {}
                 for record in all_records:
-                    records_by_monitor.setdefault(record.monitor_name, []).append(record)
+                    records_by_monitor.setdefault(record.monitor_name, []).append(
+                        record
+                    )
 
                 for monitor_name in target_monitors:
                     monitor_records = records_by_monitor.get(monitor_name, [])
