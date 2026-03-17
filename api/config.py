@@ -1,6 +1,5 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from typing import Optional
 
 from .models import ConfigResponse
 from version import API_VERSION
@@ -9,10 +8,9 @@ router = APIRouter(prefix="/api", tags=["Configuration"])
 
 
 class VersionInfo(BaseModel):
-    """Version information for both API and frontend."""
+    """Version information for API."""
 
     api_version: str
-    frontend_version: Optional[str] = None
 
 
 def create_config_router(app_config: dict):
@@ -51,32 +49,16 @@ def create_config_router(app_config: dict):
         response_model=VersionInfo,
         status_code=200,
         summary="Get version information",
-        description="Get API and frontend version information",
+        description="Get API version information",
     )
     def get_versions():
         """Get version information.
 
-        Returns the current versions of both the API and frontend by reading
-        the frontend package.json file.
+        Returns the current API version.
 
         Returns:
-            VersionInfo: Response containing API and frontend version numbers.
+            VersionInfo: Response containing API version.
         """
-        import json
-        import os
-
-        frontend_version = "1.0.1"
-        try:
-            package_json_path = os.path.join(
-                os.path.dirname(__file__), "..", "..", "frontend", "package.json"
-            )
-            if os.path.exists(package_json_path):
-                with open(package_json_path, "r") as f:
-                    package_data = json.load(f)
-                    frontend_version = package_data.get("version", "1.0.1")
-        except Exception:
-            pass
-
-        return {"api_version": API_VERSION, "frontend_version": frontend_version}
+        return {"api_version": API_VERSION}
 
     return router
