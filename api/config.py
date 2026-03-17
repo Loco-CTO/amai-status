@@ -65,7 +65,7 @@ def create_config_router(app_config: dict):
         import json
         import os
 
-        frontend_version = "1.0.0"
+        frontend_version = "1.0.1"
         try:
             package_json_path = os.path.join(
                 os.path.dirname(__file__), "..", "..", "frontend", "package.json"
@@ -73,7 +73,7 @@ def create_config_router(app_config: dict):
             if os.path.exists(package_json_path):
                 with open(package_json_path, "r") as f:
                     package_data = json.load(f)
-                    frontend_version = package_data.get("version", "1.0.0")
+                    frontend_version = package_data.get("version", "1.0.1")
         except Exception:
             pass
 
