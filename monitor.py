@@ -60,16 +60,19 @@ async def send_discord_notification(
     }
 
     try:
-        async with aiohttp.ClientSession() as session, session.post(
-            webhook_url, json={"embeds": [embed]}
-        ) as response:
+        async with (
+            aiohttp.ClientSession() as session,
+            session.post(webhook_url, json={"embeds": [embed]}) as response,
+        ):
             if response.status not in [200, 204]:
                 logger.warning(f"Discord webhook failed for {name}: {response.status}")
     except Exception as e:
         logger.error(f"Failed to send Discord notification: {str(e)}")
 
 
-async def check_monitor(monitor: dict, session: aiohttp.ClientSession, db, app_config: dict):
+async def check_monitor(
+    monitor: dict, session: aiohttp.ClientSession, db, app_config: dict
+):
     """Check a single monitor's status and record results.
 
     Makes an HTTP request to the monitor URL, records the result to the database,
