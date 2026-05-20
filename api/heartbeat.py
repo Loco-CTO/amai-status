@@ -28,8 +28,14 @@ def create_heartbeat_router(app_config: dict, monitors_config: list):
         "week": 104 * 7 * 24,
     }
 
+    def get_configured_interval_seconds(monitor: dict) -> float:
+        interval_ms = monitor.get("interval", 30000)
+        if not isinstance(interval_ms, (int, float)) or interval_ms <= 0:
+            return 30.0
+        return interval_ms / 1000
+
     monitor_interval_seconds = {
-        monitor["name"]: (monitor.get("interval", 30000) or 30000) / 1000
+        monitor["name"]: get_configured_interval_seconds(monitor)
         for monitor in monitors_config
     }
 
