@@ -7,6 +7,13 @@ import database
 router = APIRouter(prefix="/api/status", tags=["Status"])
 
 
+def get_monitor_category(monitor: dict):
+    category = monitor.get("category")
+    if isinstance(category, str) and category.strip():
+        return category.strip()
+    return None
+
+
 def create_status_router(monitors_config: list):
     """Create status router with config dependency.
 
@@ -121,6 +128,7 @@ def create_status_router(monitors_config: list):
 
                 monitor_data = {
                     "name": monitor["name"],
+                    "category": get_monitor_category(monitor),
                     "current_status": {
                         "is_up": latest.is_up if latest else None,
                         "status_code": latest.status_code if latest else None,

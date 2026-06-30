@@ -6,6 +6,13 @@ from .models import MonitorInfo
 router = APIRouter(prefix="/api/monitors", tags=["Monitors"])
 
 
+def get_monitor_category(monitor: dict):
+    category = monitor.get("category")
+    if isinstance(category, str) and category.strip():
+        return category.strip()
+    return None
+
+
 def create_monitors_router(monitors_config: list):
     """Create monitors router with config dependency.
 
@@ -34,6 +41,9 @@ def create_monitors_router(monitors_config: list):
         Returns:
             list: List of MonitorInfo objects with monitor names.
         """
-        return [{"name": m["name"]} for m in monitors_config]
+        return [
+            {"name": m["name"], "category": get_monitor_category(m)}
+            for m in monitors_config
+        ]
 
     return router
