@@ -132,10 +132,12 @@ site:
 
 monitors:
   - name: "API Server"
+    category: "Core Services"
     url: "https://api.example.com/health"
     interval: 60
 
   - name: "Database"
+    category: "Core Services"
     url: "https://db.example.com/health"
     interval: 30
 
@@ -150,6 +152,7 @@ cache:
 - **site.accent_color:** Primary accent color (RGB format)
 - **monitors:** List of services to monitor
 - **monitors[].name:** Display name for service
+- **monitors[].category:** Optional display category for grouping services on the status page
 - **monitors[].url:** Health check endpoint
 - **monitors[].interval:** Check interval in seconds
 
