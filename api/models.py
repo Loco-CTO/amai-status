@@ -62,9 +62,12 @@ class MonitorInfo(BaseModel):
     """
 
     name: str = Field(..., description="Monitor name")
+    category: Optional[str] = Field(None, description="Optional monitor category")
 
     class Config:
-        json_schema_extra = {"example": {"name": "Google Search"}}
+        json_schema_extra = {
+            "example": {"name": "Google Search", "category": "Core Services"}
+        }
 
 
 class StatusRecord(BaseModel):
@@ -125,6 +128,7 @@ class MonitorStatusDetail(BaseModel):
     """
 
     name: str = Field(..., description="Monitor name")
+    category: Optional[str] = Field(None, description="Optional monitor category")
     current_status: CurrentStatus = Field(..., description="Current status")
     history: List[StatusRecord] = Field(..., description="Status history records")
 
@@ -132,6 +136,7 @@ class MonitorStatusDetail(BaseModel):
         json_schema_extra = {
             "example": {
                 "name": "Google Search",
+                "category": "Core Services",
                 "current_status": {
                     "is_up": True,
                     "status_code": 200,
@@ -173,6 +178,7 @@ class AllStatusResponse(BaseModel):
                 "monitors": [
                     {
                         "name": "Google Search",
+                        "category": "Core Services",
                         "current_status": {
                             "is_up": True,
                             "status_code": 200,
