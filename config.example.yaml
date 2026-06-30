@@ -29,6 +29,8 @@ configuration:
 # Add as many monitors as needed
 monitors:
   - name: "Google Search"
+    # Optional category used to group monitors on the status page
+    category: "Services"
     url: "https://www.google.com"
     # Check interval in milliseconds (e.g., 30000 = 30 seconds)
     interval: 30000
@@ -45,6 +47,7 @@ monitors:
       webhook_url: ""
 
   - name: "Your API"
+    category: "Services"
     url: "https://api.example.com/health"
     interval: 30000
     verify: true
